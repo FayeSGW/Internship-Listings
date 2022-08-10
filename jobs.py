@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup as bs
+import pandas as pd
+import re
 
 headers = requests.utils.default_headers()
 headers.update({
@@ -32,6 +34,7 @@ def Indeed():
     baseurl = "https://no.indeed.com/jobs?q=it%20intern&l=Oslo?"
     urls = []
     joblst = []
+    complst = []
     page = requests.get(baseurl, headers = headers)
     soup = bs(page.content, "html.parser")
 
@@ -52,10 +55,21 @@ def Indeed():
         for job in jobs:
             title = job.find("h2", class_ = "jobTitle").get_text()
             company = job.find("span", class_ = "companyName").get_text()
-            joblst.append(title)
+            match1 = re.search(r"\bintern\b", title, re.IGNORECASE)
+            match2 = re.search(r"\binternship\b", title, re.IGNORECASE)
+            match3 = re.search(r"\nsales\b", title, re.IGNORECASE)
+            if match1 or match2 and not match3:
+                joblst.append(title)
+                complst.append(company)
 
-    print(len(joblst))
-    print(joblst)     
+    inddict = {"Company": complst, "Title": joblst}
+    indDF = pd.DataFrame(inddict)
+
+    unique = indDF.drop_duplicates()
+    print(unique)
+
+
+
     
            
 
