@@ -16,14 +16,15 @@ def main():
     titles = []
     links = []
 
-
     Glassdoor()
+    Finn()
 
     jobsdict = {"Company": companies, "Title": titles, "Link": links}
-    jobsDF = pd.DataFrame(jobsdict)
 
-    unique = jobsDF.drop_duplicates()
-    print(unique)
+    jobsDF = pd.DataFrame(jobsdict)
+    uniquejobsDF = jobsDF.drop_duplicates()
+    print(uniquejobsDF)
+    
 
 def Glassdoor():
     url = "https://www.glassdoor.com/Job/norway-internship-jobs-SRCH_IL.0,6_IN180_KO7,17.htm?industryNId=10013"
@@ -34,6 +35,7 @@ def Glassdoor():
 
     jobs = soup.find_all("li", class_ = "react-job-listing")
 
+    
     for job in jobs:
         a = job.find_all("a")
         company = a[1].get_text()
@@ -45,37 +47,43 @@ def Glassdoor():
         links.append(link)
 
 
-def Indeed():
-    baseurl = "https://no.indeed.com/jobs?q=it%20intern&l=Oslo?"
-    urls = []
-    page = requests.get(baseurl, headers = headers)
+def Finn():
+    baseurl = "https://www.finn.no/job/fulltime/search.html?location=1.20001.20061&occupation=0.23"
+    urls = ["https://www.finn.no/job/fulltime/search.html?location=1.20001.20061&occupation=0.23"]
+
+    page = requests.get(baseurl)
     soup = bs(page.content, "html.parser")
 
-    pg_no = soup.find("div", class_ = "jobsearch-JobCountAndSortPane-jobCount").text.strip()
-    if "\xa0" in pg_no:
-        page_no = int(pg_no[10:16].replace("\xa0", ""))
-    else:
-        page_no = int(pg_no[10:13])
-  
-    for num in range(0, page_no, 10):
-        urls.append(baseurl + "&start=" + str(num))
+    pages = soup.find_all("a", class_ = "pagination__page")
+
+    for i in range(len(pages)):
+        url = baseurl + "&page=" + str(i+1)
+        urls.append(url)
 
     for url in urls:
-        page = requests.get(url, headers = headers)
-        soup = bs(page.content, "html.parser")
-        jobs = soup.find_all("div", class_ = "cardOutline")
+        newpage = requests.get(url)
+        newsoup = bs(newpage.content, "html.parser")
+        jobs = newsoup.find_all("div", class_ = "ads__unit__content")
 
         for job in jobs:
-            title = job.find("h2", class_ = "jobTitle").get_text()
-            company = job.find("span", class_ = "companyName").get_text()
-            match1 = re.search(r"\bintern\b", title, re.IGNORECASE)
-            match2 = re.search(r"\binternship\b", title, re.IGNORECASE)
-            match3 = re.search(r"\nsales\b", title, re.IGNORECASE)
-            if match1 or match2 and not match3:
-                titles.append(title)
-                companies.append(company)
+            title = job.find("div", class_ = "ads__unit__content__keys")
+            company = job.find("div", class_ = "ads__unit__content__list").get_text()
+            link = job.find("a", class_ = "ads__unit__link")["href"]
 
-    
+            
+            if title == None:
+                pass
+            else:
+                title = title.get_text()
+                internptn = re.search(r"\bintern\b", title, re.IGNORECASE)
+                internshipptn = re.search(r"\binternship\b", title, re.IGNORECASE)
+                if internptn or internshipptn:
+                    titles.append(title)
+                    companies.append(company)
+                    links.append(link)
+
+        
+        
 
 
 
